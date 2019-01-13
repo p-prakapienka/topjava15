@@ -4,9 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.util.StringUtils;
 import ru.javawebinar.topjava.model.Meal;
 import ru.javawebinar.topjava.service.MealService;
-import ru.javawebinar.topjava.service.MealServiceImpl;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -14,7 +14,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
@@ -75,6 +77,15 @@ public class MealServlet extends HttpServlet {
                 request.setAttribute("meal", meal);
                 request.getRequestDispatcher("/mealForm.jsp").forward(request, response);
                 break;
+            case "filter":
+                LocalDate fromDate = LocalDate.parse(getOrDefault(request, "fromDate", LocalDate.MIN.toString()));
+                LocalDate toDate = LocalDate.parse(getOrDefault(request, "toDate", LocalDate.MAX.toString()));
+                LocalTime fromTime = LocalTime.parse(getOrDefault(request, "fromTime", LocalTime.MIN.toString()));
+                LocalTime toTime = LocalTime.parse(getOrDefault(request, "toTime", LocalTime.MAX.toString()));
+                request.setAttribute("meals",
+                        service.getFiltered(SecurityUtil.authUserId(), fromDate, toDate, fromTime, toTime));
+                request.getRequestDispatcher("/meals.jsp").forward(request, response);
+                break;
             case "all":
             default:
                 log.info("getAll");
@@ -87,5 +98,10 @@ public class MealServlet extends HttpServlet {
     private int getId(HttpServletRequest request) {
         String paramId = Objects.requireNonNull(request.getParameter("id"));
         return Integer.parseInt(paramId);
+    }
+
+    private String getOrDefault(HttpServletRequest request, String param, String defaultValue) {
+        String value = request.getParameter(param);
+        return StringUtils.isEmpty(value) ? defaultValue : value;
     }
 }
